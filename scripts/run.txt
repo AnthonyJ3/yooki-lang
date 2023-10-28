@@ -1,0 +1,5 @@
+run:
+gcc -o ../interpreter.exe ../src/main.c ../src/ast.c
+
+debug:
+gcc -o ../interpreter.exe ../src/main.c ../src/ast.c -g

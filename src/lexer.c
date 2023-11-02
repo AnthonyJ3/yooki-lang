@@ -1,22 +1,32 @@
+// assigns a token type to each character in the input expression
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Token types
 typedef enum {
-    TOKEN_OPERATOR,
-    TOKEN_NUMBER,
-    TOKEN_END
+    OPERATOR,  // +, -, *, /
+    NUMBER,    // 0-9
+    CHAR,      // a-z, A-Z
+    SYMBOL,    // !, @, #, $, %, ^, &, _, =, +, [, ], {, }, |, <, >, ?, ~
+    LPAREN,    // ( 
+    RPAREN,    // ) 
+    QUOTE,     // ", '
+    COMMENT,   // #
+    MACRO,     // :
+    ENDLINE,   // ;
+    DOT,       // .
+    COMMA,     // ,
+    KEYWORD,   // if, else, etc.
+    UNDEFINED, // anything else
+    END        
 } TokenType;
 
-// Token structure
 typedef struct {
     TokenType type;
     char* value;
-} Token;
+} Token; 
 
-// Function to initialize a token
 Token createToken(TokenType type, char* value) {
     Token token;
     token.type = type;
@@ -24,27 +34,49 @@ Token createToken(TokenType type, char* value) {
     return token;
 }
 
-// Function to check if a character is an operator
-int isOperator(char c) {
-    return (c == '+' || c == '-' || c == '*' || c == '/');
+TokenType checkKeywords(char* string) {
+    switch (*string) {
+        //add keywords with enums maybe
+        default:
+            return UNDEFINED;
+    }
 }
 
-// Function to tokenize an input expression
-Token* tokenize(char* expression) {
-    int length = strlen(expression);
-    Token* tokens = (Token*)malloc(length * sizeof(Token));  // Assuming each character is a token
+int isOperator(char c) {
+    switch (c) {
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+            return 1;
+        default:
+            return 0;
+    }
+}
 
+int isAlphabetical(char c) {
+    switch (c) {
+        case 'a'...'z':
+        case 'A'...'Z':
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+Token* tokenize(char* expression) {
+    Token* tokens = (Token*)malloc(strlen(expression) * sizeof(Token));
+    //make sure not leaking memory
     int tokenCount = 0;
-    for (int i = 0; i < length; i++) {
+    for (int i = 0; i < strlen(expression); i++) {
         if (isspace(expression[i])) {
-            // Skip spaces
+            // Skip spaces for now
             continue;
         } else if (isOperator(expression[i])) {
-            // Operators are single-character tokens
             char* operator = (char*)malloc(2);
             operator[0] = expression[i];
             operator[1] = '\0';
-            tokens[tokenCount++] = createToken(TOKEN_OPERATOR, operator);
+            tokens[tokenCount++] = createToken(OPERATOR, operator);
         } else if (isdigit(expression[i])) {
             // Parse numbers
             int j = i;
@@ -54,17 +86,23 @@ Token* tokenize(char* expression) {
             char* number = (char*)malloc(j - i + 1);
             strncpy(number, expression + i, j - i);
             number[j - i] = '\0';
-            tokens[tokenCount++] = createToken(TOKEN_NUMBER, number);
+            tokens[tokenCount++] = createToken(NUMBER, number);
             i = j - 1;
-        } else {
-            // Handle other characters as needed
-            // For simplicity, this example doesn't handle other character types
+        } else if (isAlphabetical(expression[i])) {
+            // Parse characters
+            int j = i;
+            while (isAlphabetical(expression[j])) {
+                j++;
+            }
+            char* string = (char*)malloc(j - i + 1);
+            strncpy(string, expression + i, j - i);
+            string[j - i] = '\0';
+            tokens[tokenCount++] = createToken(checkKeywords(string), string);
+            i = j - 1;
         }
+        // check for reserved keywords
     }
-
-    // Add an end token
-    tokens[tokenCount] = createToken(TOKEN_END, NULL);
-
+    tokens[tokenCount] = createToken(END, NULL);
     return tokens;
 }
 
@@ -72,7 +110,7 @@ int main() {
     char expression[] = "2 + 3 * 4 - 1";
     Token* tokens = tokenize(expression);
 
-    for (int i = 0; tokens[i].type != TOKEN_END; i++) {
+    for (int i = 0; tokens[i].type != END; i++) {
         printf("Token Type: %d, Value: %s\n", tokens[i].type, tokens[i].value);
         free(tokens[i].value); // Free memory allocated for token values
     }
